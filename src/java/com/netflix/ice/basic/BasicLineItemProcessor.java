@@ -196,7 +196,7 @@ public class BasicLineItemProcessor implements LineItemProcessor {
         }
 
         TagGroup tagGroup = TagGroup.getTagGroup(account, reformedMetaData.region, zone, product, operation, usageType, null);
-        TagGroup resourceTagGroup = null;
+        List<TagGroup> resourceTagGroups =  Lists.newArrayList();
 
         if (costValue > 0 && !reservationUsage && product == Product.ec2_instance && tagGroup.operation == Operation.ondemandInstances) {
             String key = operation + "|" + tagGroup.region + "|" + usageType;
@@ -225,8 +225,11 @@ public class BasicLineItemProcessor implements LineItemProcessor {
 
             String resourceGroupStr = config.resourceService.getResource(account, reformedMetaData.region, product, items[resourceIndex], items, millisStart);
             if (!StringUtils.isEmpty(resourceGroupStr)) {
-                ResourceGroup resourceGroup = ResourceGroup.getResourceGroup(resourceGroupStr);
-                resourceTagGroup = TagGroup.getTagGroup(account, reformedMetaData.region, zone, product, operation, usageType, resourceGroup);
+                String[] resourceGroupStrs = resourceGroupStr.split(";");
+                for (String resourceGroupS: resourceGroupStrs) {
+                    ResourceGroup resourceGroup = ResourceGroup.getResourceGroup(resourceGroupS);
+                    resourceTagGroups.add(TagGroup.getTagGroup(account, reformedMetaData.region, zone, product, operation, usageType, resourceGroup));
+                }
                 if (usageDataOfProduct == null) {
                     usageDataOfProduct = new ReadWriteData();
                     costDataOfProduct = new ReadWriteData();
@@ -247,7 +250,8 @@ public class BasicLineItemProcessor implements LineItemProcessor {
                     break;
 
                 long time = millisStart + i * AwsUtils.hourMillis;
-                usageValue = config.randomizer.randomizeUsage(time, resourceTagGroup == null ? tagGroup : resourceTagGroup, usageValue);
+                //usageValue = config.randomizer.randomizeUsage(time, resourceTagGroup == null ? tagGroup : resourceTagGroup, usageValue);
+                usageValue = config.randomizer.randomizeUsage(time, resourceTagGroups.size() > 0 ? resourceTagGroups.get(0) : tagGroup, usageValue);
                 costValue = usageValue * config.randomizer.randomizeCost(tagGroup);
             }
             if (product != Product.monitor) {
@@ -261,16 +265,18 @@ public class BasicLineItemProcessor implements LineItemProcessor {
                 resourceCostValue = usageValue * config.costPerMonitorMetricPerHour;
             }
 
-            if (resourceTagGroup != null) {
+            if (resourceTagGroups.size() > 0) {
                 Map<TagGroup, Double> usagesOfResource = usageDataOfProduct.getData(i);
                 Map<TagGroup, Double> costsOfResource = costDataOfProduct.getData(i);
 
                 if (config.randomizer == null || tagGroup.product == Product.rds || tagGroup.product == Product.s3) {
-                    addValue(usagesOfResource, resourceTagGroup, usageValue, product != Product.monitor);
-                    if (!config.useCostForResourceGroup.equals("modeled") || resourceCostValue < 0) {
-                        addValue(costsOfResource, resourceTagGroup, costValue, product != Product.monitor);
-                    } else {
-                        addValue(costsOfResource, resourceTagGroup, resourceCostValue, product != Product.monitor);
+                    for (TagGroup resourceTagGroup: resourceTagGroups) {
+                        addValue(usagesOfResource, resourceTagGroup, usageValue, product != Product.monitor);
+                        if (!config.useCostForResourceGroup.equals("modeled") || resourceCostValue < 0) {
+                            addValue(costsOfResource, resourceTagGroup, costValue, product != Product.monitor);
+                        } else {
+                            addValue(costsOfResource, resourceTagGroup, resourceCostValue, product != Product.monitor);
+                        }
                     }
                 }
                 else {
@@ -278,12 +284,12 @@ public class BasicLineItemProcessor implements LineItemProcessor {
                     for (Map.Entry<String, Double> entry : distribution.entrySet()) {
                         String app = entry.getKey();
                         double dist = entry.getValue();
-                        resourceTagGroup = TagGroup.getTagGroup(account, reformedMetaData.region, zone, product, operation, usageType, ResourceGroup.getResourceGroup(app));
+                        TagGroup resourceTagGroupRand = TagGroup.getTagGroup(account, reformedMetaData.region, zone, product, operation, usageType, ResourceGroup.getResourceGroup(app));
                         double usage = usageValue * dist;
                         if (product == Product.ec2_instance)
                             usage = (int)usageValue * dist;
-                        addValue(usagesOfResource, resourceTagGroup, usage, false);
-                        addValue(costsOfResource, resourceTagGroup, usage * config.randomizer.randomizeCost(tagGroup), false);
+                        addValue(usagesOfResource, resourceTagGroupRand, usage, false);
+                        addValue(costsOfResource, resourceTagGroupRand, usage * config.randomizer.randomizeCost(tagGroup), false);
                     }
                 }
             }

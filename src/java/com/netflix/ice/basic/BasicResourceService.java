@@ -26,9 +26,15 @@ public class BasicResourceService extends ResourceService {
 
         String result = "";
         for (String tag: processorConfig.customTags) {
-            int index = header.indexOf(tag);
-            if (index > 0 && lineItem.length > index && !StringUtils.isEmpty(lineItem[index]))
-                result = StringUtils.isEmpty(result) ? lineItem[index] : result + "_" + lineItem[index];
+            String[] tag_parts = tag.split("&");
+            String result_parts = "";
+            for (String tag_part: tag_parts) {
+                int index = header.indexOf(tag_part);
+                if (index > 0 && lineItem.length > index && !StringUtils.isEmpty(lineItem[index]))
+                    result_parts = StringUtils.isEmpty(result_parts) ? lineItem[index] : result_parts + " + " + lineItem[index];
+            }
+            if (!StringUtils.isEmpty(result_parts))
+                result = StringUtils.isEmpty(result) ? result_parts : result + ";" + result_parts;
         }
 
         return StringUtils.isEmpty(result) ? product.name : result;
