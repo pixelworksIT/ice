@@ -164,6 +164,11 @@ class BootStrap {
                 if (prop.getProperty(IceOptions.URL_PREFIX) != null)
                     properties.setProperty(IceOptions.URL_PREFIX, prop.getProperty(IceOptions.URL_PREFIX));
 
+                // Check for S3 in China Region
+                properties.setProperty("for_china_region", "no");
+                if (prop.getProperty(IceOptions.BILLING_S3_BUCKET_REGION).indexOf("cn-") >= 0)
+                    properties.setProperty("for_china_region", "yes");
+
                 ReservationCapacityPoller reservationCapacityPoller = null;
                 if ("true".equals(prop.getProperty("ice.reservationCapacityPoller"))) {
                     reservationCapacityPoller = new ReservationCapacityPoller();

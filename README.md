@@ -79,6 +79,7 @@ Using basic setup, you don't need any extra code change and you will use the pro
           # prefix of the billing files. multiple prefixes are delimited by ","
           ice.billing_s3bucketprefix=,
           # location for the billing bucket.  It should be specified for buckets using v4 validation
+          # update 20170907 by HouYu Li <hyli@pixelworks.com> : Now support S3 bucket in China Region. If a China Region S3 bucket is configured, all other non China Region S3 buckets will be ignored.
           ice.billing_s3bucketregion=eu-west-1,eu-central-1
           # specify your payer account id here if across-accounts IAM role access is used. multiple account ids are delimited by ",". "ice.billing_payerAccountId=,222222222222" means assumed role access is only used for the second bucket.
           ice.billing_payerAccountId=,123456789012

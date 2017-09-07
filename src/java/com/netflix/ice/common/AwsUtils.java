@@ -43,6 +43,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Properties;
+
+import com.netflix.ice.processor.*;
 
 /**
  * Utility class to handle interactions with aws.
@@ -71,8 +74,14 @@ public class AwsUtils {
      * @return assumes IAM credentials
      */
     public static Credentials getAssumedCredentials(String accountId, String assumeRole, String externalId) {
+        ProcessorConfig config = ProcessorConfig.getInstance();
+        String arnNs = "aws";
+        if ("yes".equals(config.properties.getProperty("for_china_region"))) {
+            arnNs = "aws-cn";
+            securityClient.setEndpoint("sts.cn-north-1.amazonaws.com.cn");
+        }
         AssumeRoleRequest assumeRoleRequest = new AssumeRoleRequest()
-                .withRoleArn("arn:aws:iam::" + accountId + ":role/" + assumeRole)
+                .withRoleArn("arn:" + arnNs + ":iam::" + accountId + ":role/" + assumeRole)
                 .withRoleSessionName(assumeRole.substring(0, Math.min(assumeRole.length(), 32)));
         if (!StringUtils.isEmpty(externalId))
             assumeRoleRequest.setExternalId(externalId);
@@ -84,7 +93,7 @@ public class AwsUtils {
      * This method must be called before all methods can be used.
      * @param credentialsProvider
      */
-    public static void init(AWSCredentialsProvider credentialsProvider) {
+    public static void init(AWSCredentialsProvider credentialsProvider, Properties prop) {
         awsCredentialsProvider = credentialsProvider;
         clientConfig = new ClientConfiguration();
         String proxyHost = System.getProperty("https.proxyHost");
@@ -100,8 +109,19 @@ public class AwsUtils {
                 s3Client.setEndpoint("s3.amazonaws.com");
             }
             else {
-                s3Client.setEndpoint("s3-" + System.getProperty("EC2_REGION") + ".amazonaws.com");
+                if (System.getProperty("EC2_REGION").contains("cn-")) {
+                    prop.setProperty("for_china_region", "yes");
+                    s3Client.setEndpoint("s3." + System.getProperty("EC2_REGION") + ".amazonaws.com.cn");
+                }
+                else {
+                    s3Client.setEndpoint("s3." + System.getProperty("EC2_REGION") + ".amazonaws.com");
+                }
             }
+        }
+        else {
+            // Check if any china region s3 bucket configured in ice.properties file
+            if ("yes".equals(prop.getProperty("for_china_region")))
+                s3Client.setEndpoint("s3.cn-north-1.amazonaws.com.cn");
         }
     }
 
@@ -123,7 +143,12 @@ public class AwsUtils {
                     simpleDBClient.setEndpoint("sdb.amazonaws.com");
                 }
                 else {
-                    simpleDBClient.setEndpoint("sdb." + System.getProperty("EC2_REGION") + ".amazonaws.com");
+                    if (System.getProperty("EC2_REGION").contains("cn-")) {
+                        simpleDBClient.setEndpoint("sdb." + System.getProperty("EC2_REGION") + ".amazonaws.com.cn");
+                    }
+                    else {
+                        simpleDBClient.setEndpoint("sdb." + System.getProperty("EC2_REGION") + ".amazonaws.com");
+                    }
                 }
             }
         }
@@ -273,7 +298,12 @@ public class AwsUtils {
             }
 
             if(bucketFileRegion != null && !bucketFileRegion.isEmpty()) {
-                s3Client.setEndpoint("s3-" + bucketFileRegion + ".amazonaws.com");
+                if (bucketFileRegion.contains("cn-")) {
+                    s3Client.setEndpoint("s3." + bucketFileRegion + ".amazonaws.com.cn");
+                }
+                else {
+                    s3Client.setEndpoint("s3." + bucketFileRegion + ".amazonaws.com");
+                }
             }
 
             ObjectMetadata metadata = s3Client.getObjectMetadata(bucketName, bucketFilePrefix + file.getName());

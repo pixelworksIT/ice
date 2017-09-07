@@ -83,6 +83,12 @@ public class BillingFileProcessor extends Poller {
             String billingAccessRoleName = config.billingAccessRoleNames.length > i ? config.billingAccessRoleNames[i] : "";
             String billingAccessExternalId = config.billingAccessExternalIds.length > i ? config.billingAccessExternalIds[i] : "";
 
+            // Ignore non China Region S3 bucket, if there's any China Region S3 bucket configured
+            if ("yes".equals(config.properties.getProperty("for_china_region")) && !billingS3BucketRegion.contains("cn-")) {
+                logger.info("china region s3 bucket detected. ignoring non china region s3 bucket " + billingS3BucketName + " in region " + billingS3BucketRegion + ".");
+                continue;
+            }
+
             logger.info("trying to list objects in billing bucket " + billingS3BucketName + " using assume role, and external id "
                     + billingAccessRoleName + " " + billingAccessExternalId);
             List<S3ObjectSummary> objectSummaries = AwsUtils.listAllObjects(billingS3BucketName, billingS3BucketPrefix,

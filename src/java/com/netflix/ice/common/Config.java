@@ -34,6 +34,8 @@ public abstract class Config {
     public final DateTime startDate;
     public final AWSCredentialsProvider credentialsProvider;
 
+    public final Properties properties;
+
     /**
      *
      * @param properties (required)
@@ -67,6 +69,8 @@ public abstract class Config {
         this.productService = productService;
         this.resourceService = resourceService;
 
-        AwsUtils.init(credentialsProvider);
+        this.properties = properties;
+
+        AwsUtils.init(credentialsProvider, properties);
     }
 }

@@ -40,6 +40,7 @@ public class Region extends Tag {
     public static final Region AP_NORTHEAST_2 = new Region("ap-northeast-2","APN2");
     public static final Region SA_EAST_1 = new Region("sa-east-1", "SAE1");
     public static final Region CA_CENTRAL_1 = new Region("ca-central-1", "CAC1");
+    public static final Region CN_NORTH_1 = new Region("cn-north-1", "CNN1");
 
     private static ConcurrentMap<String, Region> regionsByName = Maps.newConcurrentMap();
     private static ConcurrentMap<String, Region> regionsByShortName = Maps.newConcurrentMap();
@@ -60,6 +61,7 @@ public class Region extends Tag {
         regionsByShortName.put(AP_NORTHEAST_2.shortName, AP_NORTHEAST_2);
         regionsByShortName.put(SA_EAST_1.shortName, SA_EAST_1);
         regionsByShortName.put(CA_CENTRAL_1.shortName, CA_CENTRAL_1);
+        regionsByShortName.put(CN_NORTH_1.shortName, CN_NORTH_1);
 
         regionsByName.put(US_EAST_1.name, US_EAST_1);
         regionsByName.put(US_EAST_2.name, US_EAST_2);
@@ -76,6 +78,7 @@ public class Region extends Tag {
         regionsByName.put(AP_NORTHEAST_2.name, AP_NORTHEAST_2);
         regionsByName.put(SA_EAST_1.name, SA_EAST_1);
         regionsByName.put(CA_CENTRAL_1.name, CA_CENTRAL_1);
+        regionsByName.put(CN_NORTH_1.name, CN_NORTH_1);
     }
 
     public final String shortName;
